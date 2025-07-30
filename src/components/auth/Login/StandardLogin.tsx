@@ -17,14 +17,42 @@ export const StandardLogin = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setEmail(emailValue);
-    // In a real app, this would authenticate with a backend
-    // For demo purposes, we'll just show 2FA
-    onTwoFactorRequired();
+    
+    // Test credentials - skip 2FA for demo accounts
+    const testAccounts = [
+      { email: 'business@example.com', password: 'demo123', type: 'business' },
+      { email: 'developer@example.com', password: 'demo123', type: 'developer' },
+      { email: 'admin@example.com', password: 'demo123', type: 'admin' }
+    ];
+    
+    const matchedAccount = testAccounts.find(
+      account => account.email === emailValue && account.password === password
+    );
+    
+    if (matchedAccount) {
+      // Skip 2FA for test accounts - go directly to dashboard
+      localStorage.setItem('userType', matchedAccount.type);
+      localStorage.setItem('userEmail', matchedAccount.email);
+      window.location.href = '/dashboard';
+    } else {
+      // For other accounts, show 2FA (normal flow)
+      onTwoFactorRequired();
+    }
   };
   return <div>
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>
         <p className="text-gray-600 mt-2">Sign in to your BotJob.ai account</p>
+      </div>
+      
+      {/* Test Account Info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
+        <p className="text-sm font-medium text-blue-900 mb-2">Test Accounts (No 2FA Required):</p>
+        <div className="space-y-1 text-sm text-blue-800">
+          <p>• Business: <code className="bg-blue-100 px-1 rounded">business@example.com</code> / <code className="bg-blue-100 px-1 rounded">demo123</code></p>
+          <p>• Developer: <code className="bg-blue-100 px-1 rounded">developer@example.com</code> / <code className="bg-blue-100 px-1 rounded">demo123</code></p>
+          <p>• Admin: <code className="bg-blue-100 px-1 rounded">admin@example.com</code> / <code className="bg-blue-100 px-1 rounded">demo123</code></p>
+        </div>
       </div>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>

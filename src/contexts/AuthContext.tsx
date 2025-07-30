@@ -73,6 +73,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    // Check for localStorage-based demo auth first
+    const storedUserType = localStorage.getItem('userType') as 'business' | 'developer' | 'admin' | null;
+    const storedEmail = localStorage.getItem('userEmail');
+    
+    if (storedUserType && storedEmail) {
+      // Create a mock user for demo purposes
+      const mockUser = {
+        id: `demo-${storedUserType}`,
+        email: storedEmail,
+        app_metadata: {},
+        user_metadata: {},
+        aud: 'authenticated',
+        created_at: new Date().toISOString()
+      } as User;
+      
+      setUser(mockUser);
+      setUserType(storedUserType);
+      setLoading(false);
+      return;
+    }
+    
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -166,6 +187,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    // Clear localStorage for demo accounts
+    localStorage.removeItem('userType');
+    localStorage.removeItem('userEmail');
+    
     await supabase.auth.signOut();
     setUser(null);
     setUserProfile(null);

@@ -3,12 +3,48 @@ import { subscriptionService } from '../services/subscriptionService';
 import { useAuth } from '../contexts/AuthContext';
 
 export const useSubscriptions = () => {
-  const { userProfile } = useAuth();
+  const { userProfile, user } = useAuth();
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSubscriptions = async () => {
+    // Handle demo mode
+    if (user?.id?.startsWith('demo-')) {
+      setSubscriptions([
+        {
+          id: 'demo-sub-1',
+          status: 'active',
+          agents: {
+            id: 'demo-agent-1',
+            name: 'Customer Support Pro',
+            performance_metrics: { success_rate: 96.5 }
+          },
+          agent_instances: [{
+            id: 'demo-instance-1',
+            instance_name: 'Support Agent #1',
+            status: 'active'
+          }]
+        },
+        {
+          id: 'demo-sub-2',
+          status: 'active',
+          agents: {
+            id: 'demo-agent-2',
+            name: 'Sales Assistant AI',
+            performance_metrics: { success_rate: 92.3 }
+          },
+          agent_instances: [{
+            id: 'demo-instance-2',
+            instance_name: 'Sales Agent #1',
+            status: 'active'
+          }]
+        }
+      ]);
+      setLoading(false);
+      return;
+    }
+    
     if (!userProfile?.id) return;
 
     try {
@@ -25,7 +61,7 @@ export const useSubscriptions = () => {
 
   useEffect(() => {
     fetchSubscriptions();
-  }, [userProfile?.id]);
+  }, [userProfile?.id, user?.id]);
 
   return {
     subscriptions,

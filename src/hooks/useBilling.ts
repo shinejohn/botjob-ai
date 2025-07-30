@@ -36,12 +36,27 @@ export const useInvoices = () => {
 };
 
 export const useCurrentUsage = () => {
-  const { userProfile } = useAuth();
+  const { userProfile, user } = useAuth();
   const [usage, setUsage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchUsage = async () => {
+    // Handle demo mode
+    if (user?.id?.startsWith('demo-')) {
+      setUsage({
+        totalCost: 87.25,
+        period: { start: new Date(), end: new Date() },
+        breakdown: {
+          calls: 156,
+          emails: 342,
+          tasks: 89
+        }
+      });
+      setLoading(false);
+      return;
+    }
+    
     if (!userProfile?.id) return;
 
     try {
@@ -58,7 +73,7 @@ export const useCurrentUsage = () => {
 
   useEffect(() => {
     fetchUsage();
-  }, [userProfile?.id]);
+  }, [userProfile?.id, user?.id]);
 
   return {
     usage,

@@ -25,6 +25,17 @@ export const AgentBuilder = () => {
   const [showDebugPanel, setShowDebugPanel] = useState(false)
   const [isRunningTests, setIsRunningTests] = useState(false)
   const [testResults, setTestResults] = useState(null)
+  const [draggedComponent, setDraggedComponent] = useState(null)
+  const [workflowComponents, setWorkflowComponents] = useState([])
+  const [selectedComponent, setSelectedComponent] = useState(null)
+  const [testMessages, setTestMessages] = useState([
+    { id: 1, type: 'user', text: "Hi, I'm having trouble logging into my account." },
+    { id: 2, type: 'agent', text: "I'm sorry to hear you're having trouble logging in. Could you tell me what error message you're seeing, if any? Also, have you tried resetting your password?" },
+    { id: 3, type: 'user', text: "It says 'Invalid credentials' and yes, I tried resetting but I'm not receiving the reset email." },
+    { id: 4, type: 'agent', text: "Thank you for that information. It sounds like there might be an issue with the email delivery or possibly with the email address on file. Let me check a few things for you. Could you please confirm the email address associated with your account? Also, have you checked your spam or junk folder for the reset email?" }
+  ])
+  const [testInput, setTestInput] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
   const handleDebug = () => {
     setShowDebugPanel(true)
     // Simulate debugging process
@@ -34,6 +45,7 @@ export const AgentBuilder = () => {
       console.log('Debug results: No critical issues found.')
     }, 2000)
   }
+  
   const handleRunTests = () => {
     setIsRunningTests(true)
     // Simulate test running process
@@ -45,8 +57,74 @@ export const AgentBuilder = () => {
         skipped: 0,
         total: 4,
       })
-      alert('Tests completed. 3 passed, 1 failed.')
     }, 3000)
+  }
+  
+  const handleDragStart = (e, component) => {
+    setDraggedComponent(component)
+  }
+  
+  const handleDragOver = (e) => {
+    e.preventDefault()
+  }
+  
+  const handleDrop = (e) => {
+    e.preventDefault()
+    if (draggedComponent) {
+      const newComponent = {
+        id: Date.now(),
+        ...draggedComponent,
+        x: e.clientX - e.currentTarget.getBoundingClientRect().left,
+        y: e.clientY - e.currentTarget.getBoundingClientRect().top
+      }
+      setWorkflowComponents([...workflowComponents, newComponent])
+      setDraggedComponent(null)
+    }
+  }
+  
+  const handleComponentClick = (component) => {
+    setSelectedComponent(component)
+  }
+  
+  const handleSave = () => {
+    setIsSaving(true)
+    setTimeout(() => {
+      setIsSaving(false)
+      alert('Agent configuration saved successfully!')
+    }, 1500)
+  }
+  
+  const handleSendTestMessage = () => {
+    if (testInput.trim()) {
+      const newUserMessage = {
+        id: Date.now(),
+        type: 'user',
+        text: testInput
+      }
+      setTestMessages([...testMessages, newUserMessage])
+      setTestInput('')
+      
+      // Simulate agent response
+      setTimeout(() => {
+        const agentResponse = {
+          id: Date.now() + 1,
+          type: 'agent',
+          text: 'Thank you for your message. I understand you need help with: ' + testInput + '. Let me assist you with that.'
+        }
+        setTestMessages(prev => [...prev, agentResponse])
+      }, 1000)
+    }
+  }
+  
+  const handleTemplateClick = (template) => {
+    // Load template configuration
+    if (template === 'Customer Support') {
+      setWorkflowComponents([
+        { id: 1, name: 'Message Handler', icon: MessageSquare, x: 100, y: 100 },
+        { id: 2, name: 'Knowledge Base', icon: FileText, x: 300, y: 100 },
+        { id: 3, name: 'Decision Logic', icon: Settings, x: 200, y: 250 }
+      ])
+    }
   }
   return (
     <div className="space-y-6">
@@ -76,9 +154,12 @@ export const AgentBuilder = () => {
               <Play className="h-4 w-4 mr-2" />
               Test Agent
             </button>
-            <button className="px-4 py-3 font-medium text-sm flex items-center bg-gray-50 text-gray-600 hover:text-gray-800 border-l border-gray-200">
-              <Save className="h-4 w-4 mr-2" />
-              Save
+            <button 
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-4 py-3 font-medium text-sm flex items-center bg-gray-50 text-gray-600 hover:text-gray-800 border-l border-gray-200 disabled:opacity-50">
+              <Save className={`h-4 w-4 mr-2 ${isSaving ? 'animate-pulse' : ''}`} />
+              {isSaving ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>
@@ -105,19 +186,31 @@ export const AgentBuilder = () => {
                   Core Components
                 </div>
                 <div className="space-y-2">
-                  <div className="p-3 bg-white rounded-md border border-gray-200 shadow-sm hover:border-blue-300 cursor-move flex items-center">
+                  <div 
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, { name: 'Message Handler', icon: MessageSquare })}
+                    className="p-3 bg-white rounded-md border border-gray-200 shadow-sm hover:border-blue-300 cursor-move flex items-center">
                     <MessageSquare className="h-4 w-4 text-blue-500 mr-2" />
                     <span className="text-sm">Message Handler</span>
                   </div>
-                  <div className="p-3 bg-white rounded-md border border-gray-200 shadow-sm hover:border-blue-300 cursor-move flex items-center">
+                  <div 
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, { name: 'Knowledge Base', icon: FileText })}
+                    className="p-3 bg-white rounded-md border border-gray-200 shadow-sm hover:border-blue-300 cursor-move flex items-center">
                     <FileText className="h-4 w-4 text-blue-500 mr-2" />
                     <span className="text-sm">Knowledge Base</span>
                   </div>
-                  <div className="p-3 bg-white rounded-md border border-gray-200 shadow-sm hover:border-blue-300 cursor-move flex items-center">
+                  <div 
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, { name: 'Decision Logic', icon: Settings })}
+                    className="p-3 bg-white rounded-md border border-gray-200 shadow-sm hover:border-blue-300 cursor-move flex items-center">
                     <Settings className="h-4 w-4 text-blue-500 mr-2" />
                     <span className="text-sm">Decision Logic</span>
                   </div>
-                  <div className="p-3 bg-white rounded-md border border-gray-200 shadow-sm hover:border-blue-300 cursor-move flex items-center">
+                  <div 
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, { name: 'Action Executor', icon: ArrowRight })}
+                    className="p-3 bg-white rounded-md border border-gray-200 shadow-sm hover:border-blue-300 cursor-move flex items-center">
                     <ArrowRight className="h-4 w-4 text-blue-500 mr-2" />
                     <span className="text-sm">Action Executor</span>
                   </div>
@@ -186,7 +279,9 @@ export const AgentBuilder = () => {
                   Agent Templates
                 </div>
                 <div className="space-y-2">
-                  <div className="p-3 bg-white rounded-md border border-gray-200 shadow-sm hover:border-blue-300 cursor-pointer">
+                  <div 
+                    onClick={() => handleTemplateClick('Customer Support')}
+                    className="p-3 bg-white rounded-md border border-gray-200 shadow-sm hover:border-blue-300 cursor-pointer">
                     <div className="font-medium text-sm mb-1">
                       Customer Support
                     </div>
@@ -194,7 +289,9 @@ export const AgentBuilder = () => {
                       Handles customer inquiries and troubleshooting
                     </p>
                   </div>
-                  <div className="p-3 bg-white rounded-md border border-gray-200 shadow-sm hover:border-blue-300 cursor-pointer">
+                  <div 
+                    onClick={() => handleTemplateClick('Sales Assistant')}
+                    className="p-3 bg-white rounded-md border border-gray-200 shadow-sm hover:border-blue-300 cursor-pointer">
                     <div className="font-medium text-sm mb-1">
                       Sales Assistant
                     </div>
@@ -202,7 +299,9 @@ export const AgentBuilder = () => {
                       Qualifies leads and schedules demos
                     </p>
                   </div>
-                  <div className="p-3 bg-white rounded-md border border-gray-200 shadow-sm hover:border-blue-300 cursor-pointer">
+                  <div 
+                    onClick={() => handleTemplateClick('Data Analyst')}
+                    className="p-3 bg-white rounded-md border border-gray-200 shadow-sm hover:border-blue-300 cursor-pointer">
                     <div className="font-medium text-sm mb-1">Data Analyst</div>
                     <p className="text-xs text-gray-500">
                       Processes and analyzes data sets
@@ -242,21 +341,69 @@ export const AgentBuilder = () => {
           <div className="flex-1 overflow-auto">
             {activeView === 'visual' ? (
               <div className="p-6">
-                <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <Layers className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      Visual Workflow Designer
-                    </h3>
-                    <p className="text-gray-500 max-w-md mb-4">
-                      Drag and drop components from the left panel to build your
-                      agent's workflow.
-                    </p>
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 inline-flex items-center">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add First Component
-                    </button>
-                  </div>
+                <div 
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg h-full relative overflow-auto">
+                  {workflowComponents.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <Layers className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          Visual Workflow Designer
+                        </h3>
+                        <p className="text-gray-500 max-w-md mb-4">
+                          Drag and drop components from the left panel to build your
+                          agent's workflow.
+                        </p>
+                        <button 
+                          onClick={() => setActivePanel('templates')}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 inline-flex items-center">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Use Template
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative h-full">
+                      {workflowComponents.map((component) => {
+                        const Icon = component.icon
+                        return (
+                          <div
+                            key={component.id}
+                            onClick={() => handleComponentClick(component)}
+                            className={`absolute p-4 bg-white rounded-lg shadow-md border-2 cursor-pointer transition-all ${
+                              selectedComponent?.id === component.id
+                                ? 'border-blue-500 shadow-lg'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                            style={{
+                              left: `${component.x}px`,
+                              top: `${component.y}px`,
+                              transform: 'translate(-50%, -50%)'
+                            }}
+                          >
+                            <div className="flex items-center">
+                              <Icon className="h-5 w-5 text-blue-500 mr-2" />
+                              <span className="font-medium text-sm">{component.name}</span>
+                            </div>
+                            {selectedComponent?.id === component.id && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setWorkflowComponents(workflowComponents.filter(c => c.id !== component.id))
+                                  setSelectedComponent(null)
+                                }}
+                                className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -347,46 +494,47 @@ export default agentConfig;`}
               </div>
               <div className="flex-1 overflow-auto flex flex-col">
                 <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-                  <div className="ml-auto max-w-[80%] bg-blue-100 text-blue-800 p-3 rounded-lg rounded-tr-none">
-                    Hi, I'm having trouble logging into my account.
-                  </div>
-                  <div className="max-w-[80%] bg-gray-100 p-3 rounded-lg rounded-tl-none">
-                    I'm sorry to hear you're having trouble logging in. Could
-                    you tell me what error message you're seeing, if any? Also,
-                    have you tried resetting your password?
-                  </div>
-                  <div className="ml-auto max-w-[80%] bg-blue-100 text-blue-800 p-3 rounded-lg rounded-tr-none">
-                    It says "Invalid credentials" and yes, I tried resetting but
-                    I'm not receiving the reset email.
-                  </div>
-                  <div className="max-w-[80%] bg-gray-100 p-3 rounded-lg rounded-tl-none">
-                    Thank you for that information. It sounds like there might
-                    be an issue with the email delivery or possibly with the
-                    email address on file. Let me check a few things for you.
-                    Could you please confirm the email address associated with
-                    your account? Also, have you checked your spam or junk
-                    folder for the reset email?
-                  </div>
+                  {testMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`max-w-[80%] p-3 rounded-lg ${
+                        message.type === 'user'
+                          ? 'ml-auto bg-blue-100 text-blue-800 rounded-tr-none'
+                          : 'bg-gray-100 rounded-tl-none'
+                      }`}
+                    >
+                      {message.text}
+                    </div>
+                  ))}
                 </div>
                 <div className="p-4 border-t border-gray-200">
                   <div className="flex space-x-2 mb-2">
-                    <button className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
+                    <button 
+                      onClick={() => setTestMessages([])}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
                       Clear Chat
                     </button>
                     <button className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
                       Export Log
                     </button>
-                    <button className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
+                    <button 
+                      onClick={() => window.location.reload()}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
                       <RotateCw className="h-3 w-3" />
                     </button>
                   </div>
                   <div className="relative">
                     <input
                       type="text"
+                      value={testInput}
+                      onChange={(e) => setTestInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSendTestMessage()}
                       placeholder="Type a test message..."
                       className="w-full p-3 pr-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
-                    <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-600 hover:text-blue-800">
+                    <button 
+                      onClick={handleSendTestMessage}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-600 hover:text-blue-800">
                       <svg
                         className="h-5 w-5"
                         viewBox="0 0 24 24"
